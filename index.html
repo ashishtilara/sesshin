@@ -1,0 +1,173 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Sesshin by sobstel</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Sesshin</h1>
+        <p>PHP advanced session manager.</p>
+
+        <p class="view"><a href="https://github.com/sobstel/sesshin">View the Project on GitHub <small>sobstel/sesshin</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/sobstel/sesshin/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/sobstel/sesshin/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/sobstel/sesshin">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>Sesshin</h1>
+
+<p>Object-oriented, extendable advanced session handling component written with
+security in mind that mitigates attacks like Session Hijacking, Session Fixation,
+Session Exposure, Sesion Poisoning, Session Prediction.</p>
+
+<p>Features:</p>
+
+<ul>
+<li>smart session expiry control</li>
+<li>prevents session adoption, i.e. session ids generated only by the component
+are acceptable (strict model)</li>
+<li>sends cookie only when session really created</li>
+<li>session id rotation (anti session hijacking), based on time and/or number of
+requests</li>
+<li>support for user-defined storage</li>
+<li>support for user-defined listeners (observers) </li>
+<li>support for user-defined entropy callback</li>
+<li>support for own fingerprint generators, e.g. user agent,</li>
+<li>unlike PHP native mechanism, you don't have to use cron or resourse-consuming
+100% garbage collecting probability to ensure sessions are removed exactly
+after specified time</li>
+<li>convention over configuration (has defined default listener, storage, entropy 
+generator, fingerprint generator and ID storage)</li>
+<li>100% independent from insecure native PHP session extension</li>
+<li>and some more...</li>
+</ul><h2>Requirements</h2>
+
+<ul>
+<li>PHP 5.3</li>
+</ul><h2>Usage</h2>
+
+<h3>Initialization</h3>
+
+<div class="highlight"><pre><span class="k">require_once</span> <span class="nx">__DIR__</span><span class="o">.</span><span class="s1">'/src/Sesshin/ClassLoader/ClassLoader.php'</span><span class="p">;</span>
+
+<span class="k">use</span> <span class="nx">Sesshin\ClassLoader\ClassLoader</span><span class="p">;</span>
+<span class="k">use</span> <span class="nx">Sesshin\Session\Session</span><span class="p">;</span>
+
+<span class="nv">$loader</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ClassLoader</span><span class="p">();</span>
+<span class="nv">$loader</span><span class="o">-&gt;</span><span class="na">register</span><span class="p">();</span>
+
+<span class="nv">$session</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Session</span><span class="p">();</span>
+</pre></div>
+
+<h3>Create new session</h3>
+
+<p>Only when <code>create()</code> called, session cookie is created (for native PHP session
+handler cookie is present all the time whether it's needed or not).</p>
+
+<div class="highlight"><pre><span class="nv">$session</span><span class="o">-&gt;</span><span class="na">create</span><span class="p">();</span>
+</pre></div>
+
+<h3>Open existing session</h3>
+
+<p>If session was not created earlier, session is not opened and <code>false</code> is returned.</p>
+
+<div class="highlight"><pre><span class="nv">$session</span><span class="o">-&gt;</span><span class="na">open</span><span class="p">();</span>
+</pre></div>
+
+<p>If you want to create new session if it does not exist already, just pass <code>true</code>
+as argument. It will call <code>create()</code> transparently.</p>
+
+<div class="highlight"><pre><span class="nv">$session</span><span class="o">-&gt;</span><span class="na">open</span><span class="p">(</span><span class="k">true</span><span class="p">);</span>
+</pre></div>
+
+<h3>Regenerate session id</h3>
+
+<div class="highlight"><pre><span class="c1">// auto-regenerate after specified time (secs)</span>
+<span class="nv">$session</span><span class="o">-&gt;</span><span class="na">setIdTtl</span><span class="p">(</span><span class="mi">300</span><span class="p">);</span>
+
+<span class="c1">// auto-regenerate after specified number of requests</span>
+<span class="nv">$session</span><span class="o">-&gt;</span><span class="na">setIdRequestsLimit</span><span class="p">(</span><span class="mi">10</span><span class="p">);</span>
+
+<span class="c1">// manually</span>
+<span class="nv">$session</span><span class="o">-&gt;</span><span class="na">regenerateId</span><span class="p">();</span>
+</pre></div>
+
+<h3>Observe (listen) special events</h3>
+
+<div class="highlight"><pre><span class="nv">$listener</span> <span class="o">=</span> <span class="nv">$session</span><span class="o">-&gt;</span><span class="na">getListener</span><span class="p">();</span>
+
+<span class="nv">$listener</span><span class="o">-&gt;</span><span class="na">bind</span><span class="p">(</span><span class="nx">Session</span><span class="o">::</span><span class="na">EVENT_NO_DATA_OR_EXPIRED</span><span class="p">,</span> <span class="k">function</span><span class="p">(</span><span class="nv">$event</span><span class="p">,</span> <span class="nv">$session</span><span class="p">){</span>
+  <span class="k">die</span><span class="p">(</span><span class="s1">'Session expired or session adoption attack!'</span><span class="p">);</span>
+<span class="p">});</span>
+<span class="nv">$listener</span><span class="o">-&gt;</span><span class="na">bind</span><span class="p">(</span><span class="nx">Session</span><span class="o">::</span><span class="na">EVENT_NO_DATA_OR_EXPIRED</span><span class="p">,</span> <span class="k">function</span><span class="p">(</span><span class="nv">$event</span><span class="p">,</span> <span class="nv">$session</span><span class="p">){</span>
+  <span class="k">die</span><span class="p">(</span><span class="nb">sprintf</span><span class="p">(</span><span class="s1">'Session %s expired!'</span><span class="p">,</span> <span class="nv">$session</span><span class="o">-&gt;</span><span class="na">getId</span><span class="p">()));</span>
+<span class="p">});</span>
+<span class="nv">$listener</span><span class="o">-&gt;</span><span class="na">bind</span><span class="p">(</span><span class="nx">Session</span><span class="o">::</span><span class="na">EVENT_INVALID_FINGERPRINT</span><span class="p">,</span> <span class="k">function</span><span class="p">(</span><span class="nv">$event</span><span class="p">,</span> <span class="nv">$session</span><span class="p">){</span>
+  <span class="k">die</span><span class="p">(</span><span class="s1">'Invalid fingerprint, possible attack!'</span><span class="p">);</span>
+<span class="p">});</span>
+</pre></div>
+
+<h3>User session</h3>
+
+<div class="highlight"><pre><span class="k">use</span> <span class="nx">Sesshin\Session\User</span><span class="p">;</span>
+
+<span class="nv">$user_session</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">User</span><span class="p">();</span>
+
+<span class="nv">$user_session</span><span class="o">-&gt;</span><span class="na">create</span><span class="p">();</span>
+<span class="nv">$user_session</span><span class="o">-&gt;</span><span class="na">login</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+
+<span class="k">if</span> <span class="p">(</span><span class="nv">$user_session</span><span class="o">-&gt;</span><span class="na">isLogged</span><span class="p">())</span> <span class="p">{</span>
+  <span class="nv">$user</span> <span class="o">=</span> <span class="nx">UserRepository</span><span class="o">::</span><span class="na">find</span><span class="p">(</span><span class="nv">$user_session</span><span class="o">-&gt;</span><span class="na">getUserId</span><span class="p">());</span>
+  <span class="k">echo</span> <span class="nb">sprintf</span><span class="p">(</span><span class="s1">'User %s is logged'</span><span class="p">,</span> <span class="nv">$user</span><span class="o">-&gt;</span><span class="na">getUsername</span><span class="p">());</span>
+<span class="p">}</span>
+</pre></div>
+
+<h3>Change storage</h3>
+
+<div class="highlight"><pre><span class="k">use</span> <span class="nx">Sesshin\Storage\Memcache</span><span class="p">;</span>
+
+<span class="nv">$session</span><span class="o">-&gt;</span><span class="na">setStorage</span><span class="p">(</span><span class="k">new</span> <span class="nx">Memcache</span><span class="p">(</span><span class="nv">$memcache_driver</span><span class="p">));</span>
+</pre></div>
+
+<h3>Change entropy algorithm</h3>
+
+<p>Entropy is used to generate session id.</p>
+
+<div class="highlight"><pre><span class="nv">$session</span><span class="o">-&gt;</span><span class="na">getIdHandler</span><span class="p">()</span><span class="o">-&gt;</span><span class="na">setEntropyGenerator</span><span class="p">(</span><span class="k">new</span> <span class="nx">MyFancyEntropyGenerator</span><span class="p">());</span>
+</pre></div>
+
+<p><code>MyFancyEntropyGenerator</code> must implement <code>Sesshin\EntropyGenerator\EntropyGeneratorInterface</code>.</p>
+
+<h3>Change session ID storage</h3>
+
+<p>By default session ID is stored in cookie, but sometimes you may need to force
+session id, eg. based on some token, query string var, etc.</p>
+
+<div class="highlight"><pre><span class="nv">$session</span><span class="o">-&gt;</span><span class="na">getIdHandler</span><span class="p">()</span><span class="o">-&gt;</span><span class="na">setIdStorage</span><span class="p">(</span><span class="k">new</span> <span class="nx">MyFancyIdStorage</span><span class="p">());</span>
+</pre></div>
+
+<p><code>MyFancyIdStorage</code> must implement <code>Sesshin\Id\Storage\StorageInterface</code>.</p>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/sobstel">sobstel</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
