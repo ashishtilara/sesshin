@@ -82,7 +82,7 @@ class Files extends Storage {
 	
 	protected function doDelete($key) {
     $file = $this->getPath().'/'.$key;
-    if (file_exists($file)) {
+    if (file_exists($file) && is_file($file)) {
       return unlink($file);
     }
     return false;
